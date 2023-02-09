@@ -4,6 +4,7 @@
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
+    "resolveJsonModule": true, // Habilita a importação do json na aplicação.
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "target": "es2017",

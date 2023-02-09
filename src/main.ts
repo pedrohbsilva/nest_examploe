@@ -1,20 +1,17 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { AppModule } from './modules/app/app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { setupApiDocs } from './common/api-docs';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import { HttpExceptionFilter } from './core/http/http-exception.filter';
+import { TransformInterceptor } from './core/http/http-response';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
-  const PORT = process.env.PORT || 3333;
-  const config = new DocumentBuilder()
-    .setTitle('Users API')
-    .setDescription('The CRUD Users API description')
-    .setVersion('1.0')
-    .addTag('users')
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const configService = app.get(ConfigService);
+  const PORT = configService.get<number>('port') || 3000;
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -23,6 +20,13 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  await app.listen(PORT);
+  setupApiDocs(app);
+
+  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new TransformInterceptor());
+  app.useStaticAssets(join(__dirname, '..', 'public'));
+  await app.listen(PORT).then(() => {
+    console.log(`Server is running on port ${PORT}`);
+  });
 }
 bootstrap();
